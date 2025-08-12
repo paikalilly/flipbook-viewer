@@ -7,6 +7,12 @@ html,body,#app{height:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto}
 #app{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px}
 
+/* === Remove flipbook white background === */
+.stf__wrapper,
+.stf__item {
+  background: transparent !important;
+}
+
 #book-title{margin:0 0 8px;font-weight:600;font-size:16px;opacity:.9}
 
 #book-zoom{
