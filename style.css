@@ -147,3 +147,18 @@ body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,-appl
   #book-zoom{width:98vw;height:70vh}
   #slider{width:80vw}
 }
+
+/* --- Replace the missing PageFlip CSS --- */
+#book.stf__parent { min-width: 200px; min-height: 200px; width: 100%; height: 100%; }
+#book .stf__wrapper { background: transparent !important; padding: 0 !important; }
+#book .stf__wrapper--landscape { padding-bottom: 0 !important; }
+#book .stf__block, 
+#book .stf__page, 
+#book .stf__item, 
+#book .stf__canvas, 
+#book canvas { 
+  background: transparent !important; 
+}
+#book .stf__shadow { display: none !important; }
+#book canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: auto; }
+
