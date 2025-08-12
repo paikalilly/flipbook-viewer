@@ -8,9 +8,16 @@ body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,-appl
 #app{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px}
 
 /* === Remove flipbook white background === */
-.stf__wrapper,
-.stf__item {
+#book .stf__wrapper,
+#book .stf__block,
+#book .stf__page,
+#book .stf__item,
+#book canvas,
+#book .stf__canvas {
   background: transparent !important;
+}
+#book .stf__shadow {
+  display: none !important;
 }
 
 #book-title{margin:0 0 8px;font-weight:600;font-size:16px;opacity:.9}
