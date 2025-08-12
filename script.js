@@ -26,6 +26,34 @@
   document.body.style.background = flipbookConfig.backgroundColor || '#111';
   titleEl.textContent = flipbookConfig.title || 'Flipbook';
 
+
+  function fitToBox(boxW, boxH, ratio){ // ratio = height/width
+  const w = Math.min(boxW, Math.floor(boxH / ratio));
+  return { w, h: Math.floor(w * ratio) };
+}
+
+  const ratio = flipbookConfig.aspectRatio || 1; // square
+sizeToContainer(ratio);
+
+const { w, h } = fitToBox(zoomEl.clientWidth, zoomEl.clientHeight, ratio);
+
+pageFlip = new St.PageFlip(bookEl, {
+  width: w,
+  height: h,
+  size: "stretch",
+  maxShadowOpacity: 0,
+  showCover: !!flipbookConfig.showCover,
+  usePortrait: false,
+  mobileScrollSupport: true
+});
+
+  window.addEventListener('resize', () => {
+  sizeToContainer(ratio);
+  const { w, h } = fitToBox(zoomEl.clientWidth, zoomEl.clientHeight, ratio);
+  pageFlip.update({ width: w, height: h });
+});
+
+  
   // --- mute state persistence
   const MUTE_KEY = 'flipbook-muted';
   const persistedMute = localStorage.getItem(MUTE_KEY);
