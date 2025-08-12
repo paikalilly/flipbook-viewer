@@ -8,6 +8,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,-appl
 #app{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px}
 
 /* === Remove flipbook white background === */
+#book .stf__parent,
 #book .stf__wrapper,
 #book .stf__block,
 #book .stf__page,
