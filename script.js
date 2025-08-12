@@ -42,7 +42,7 @@ pageFlip = new St.PageFlip(bookEl, {
   height: h,
   size: "stretch",
   maxShadowOpacity: 0,
-  showCover: true,
+  showCover: !!flipbookConf
   usePortrait: false,
   mobileScrollSupport: true
 });
