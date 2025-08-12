@@ -1,7 +1,7 @@
 (() => {
   const $ = (sel) => document.querySelector(sel);
 
-  let pageFlip;              // stPageFlip instance
+  let pageFlip;                    // StPageFlip instance
   let zoom = flipbookConfig.initialZoom || 1;
   const pages = flipbookConfig.pages || [];
   const pageCount = pages.length;
@@ -22,76 +22,96 @@
 
   const audio   = $('#flip-audio');
 
-  // --- init title/background
-  document.body.style.background = flipbookConfig.backgroundColor || '#111';
-  titleEl.textContent = flipbookConfig.title || 'Flipbook';
+  // ---------- helpers ----------
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
+  function setZoom(val){
+    zoom = val;
+    zoomEl.style.transform = `scale(${zoom})`;
+  }
 
-  function fitToBox(boxW, boxH, ratio){ // ratio = height/width
-  const w = Math.min(boxW, Math.floor(boxH / ratio));
-  return { w, h: Math.floor(w * ratio) };
-}
+  // Keep book inside zoom box while preserving ratio (ratio = height/width)
+  function fitToBox(boxW, boxH, ratio){
+    const w = Math.min(boxW, Math.floor(boxH / ratio));
+    return { w, h: Math.floor(w * ratio) };
+  }
 
-  const ratio = flipbookConfig.aspectRatio || 1; // square
-sizeToContainer(ratio);
+  function sizeToContainer(){
+    const W = Math.min(window.innerWidth  * 0.96, 1200);
+    const H = Math.min(window.innerHeight * 0.86,  800);
+    zoomEl.style.width  = W + 'px';
+    zoomEl.style.height = H + 'px';
+  }
 
-const { w, h } = fitToBox(zoomEl.clientWidth, zoomEl.clientHeight, ratio);
+  function updateLabel(index){
+    if (pageCount <= 0) { label.textContent = '—'; return; }
+    const last = pageCount - 1;
 
-pageFlip = new St.PageFlip(bookEl, {
-  width: w,
-  height: h,
-  size: "stretch",
-  maxShadowOpacity: 0,
-  showCover: !!flipbookConf
-  usePortrait: false,
-  mobileScrollSupport: true
-});
+    if (flipbookConfig.showCover) {
+      if (index === 0)   { label.textContent = '1'; return; }
+      if (index === last){ label.textContent = String(pageCount); return; }
+      label.textContent = (index % 2 === 1)
+        ? `${index+1}–${index+2}`
+        : `${index}–${index+1}`;
+    } else {
+      label.textContent = (index % 2 === 0)
+        ? `${index+1}–${index+2}`
+        : `${index}–${index+1}`;
+    }
+  }
 
-  window.addEventListener('resize', () => {
-  sizeToContainer(ratio);
-  const { w, h } = fitToBox(zoomEl.clientWidth, zoomEl.clientHeight, ratio);
-  pageFlip.update({ width: w, height: h });
-});
-
-  
-  // --- mute state persistence
-  const MUTE_KEY = 'flipbook-muted';
-  const persistedMute = localStorage.getItem(MUTE_KEY);
-  if (persistedMute === 'true') { btnMute.dataset.muted = 'true'; audio.muted = true; }
-
-  // --- set slider
-  slider.min = 1;
-  slider.max = Math.max(1, pageCount);
-  slider.value = 1;
-  updateLabel(0);
-
-  // --- init PageFlip when lib is ready
+  // ---------- main ----------
   window.addEventListener('DOMContentLoaded', () => {
-    const ratio = flipbookConfig.aspectRatio || 1.414; // height / width
-    sizeToContainer(ratio);
+    // title + bg
+    document.body.style.background = flipbookConfig.backgroundColor || '#111';
+    titleEl.textContent = flipbookConfig.title || 'Flipbook';
+
+    // mute state
+    const MUTE_KEY = 'flipbook-muted';
+    const persistedMute = localStorage.getItem(MUTE_KEY);
+    if (persistedMute === 'true') { btnMute.dataset.muted = 'true'; audio.muted = true; }
+
+    // slider
+    slider.min = 1;
+    slider.max = Math.max(1, pageCount);
+    slider.value = 1;
+    updateLabel(0);
+
+    // layout + init
+    const ratio = flipbookConfig.aspectRatio || 1; // square by your config
+    sizeToContainer();
+    const { w, h } = fitToBox(zoomEl.clientWidth, zoomEl.clientHeight, ratio);
 
     pageFlip = new St.PageFlip(bookEl, {
-      width: Math.floor(zoomEl.clientWidth  * 0.92),
-      height: Math.floor(zoomEl.clientWidth * 0.92 * ratio),
-      size: "stretch",
-      maxShadowOpacity: flipbookConfig.shadowOpacity ?? 0.3,
+      width: w,
+      height: h,
+      size: 'stretch',
+      maxShadowOpacity: 0,                  // kill library shadows
       showCover: !!flipbookConfig.showCover,
       usePortrait: false,
-      mobileScrollSupport: false
+      mobileScrollSupport: true
     });
 
     pageFlip.loadFromImages(pages);
 
-    // flip sound
+    // ensure wrapper/canvas are transparent (belt-and-braces)
+    const makeTransparent = () => {
+      const c = bookEl.querySelector('canvas.stf__canvas');
+      const w = bookEl.querySelector('.stf__wrapper');
+      if (c) c.style.background = 'transparent';
+      if (w) w.style.background = 'transparent';
+    };
+    makeTransparent();
+
+    // events
     pageFlip.on('flip', (e) => {
       slider.value = (e.data + 1).toString();
       updateLabel(e.data);
-      if (!audio.muted) {
-        try { audio.currentTime = 0; audio.play(); } catch(_) {}
-      }
+      if (!audio.muted) { try { audio.currentTime = 0; audio.play(); } catch(_){} }
+      makeTransparent();
     });
 
-    // click / tap zones
+    // tap zones
     $('.tap-zone.left').addEventListener('click', () => pageFlip.flipPrev());
     $('.tap-zone.right').addEventListener('click', () => pageFlip.flipNext());
 
@@ -99,14 +119,17 @@ pageFlip = new St.PageFlip(bookEl, {
     btnPrev.addEventListener('click', () => pageFlip.flipPrev());
     btnNext.addEventListener('click', () => pageFlip.flipNext());
 
-    // zoom buttons
-    btnZoomIn.addEventListener('click', () => setZoom(clamp(zoom + (flipbookConfig.zoomStep || 0.2),
-                                                           flipbookConfig.minZoom || 1,
-                                                           flipbookConfig.maxZoom || 2)));
-    btnZoomOut.addEventListener('click', () => setZoom(clamp(zoom - (flipbookConfig.zoomStep || 0.2),
-                                                            flipbookConfig.minZoom || 1,
-                                                            flipbookConfig.maxZoom || 2)));
-    // dblclick toggles zoom
+    // zoom
+    btnZoomIn.addEventListener('click', () => setZoom(clamp(
+      zoom + (flipbookConfig.zoomStep || 0.2),
+      flipbookConfig.minZoom || 1,
+      flipbookConfig.maxZoom || 2
+    )));
+    btnZoomOut.addEventListener('click', () => setZoom(clamp(
+      zoom - (flipbookConfig.zoomStep || 0.2),
+      flipbookConfig.minZoom || 1,
+      flipbookConfig.maxZoom || 2
+    )));
     zoomEl.addEventListener('dblclick', () => {
       const mid = ((flipbookConfig.minZoom||1)+(flipbookConfig.maxZoom||2))/2;
       setZoom(zoom > mid ? (flipbookConfig.minZoom||1) : (flipbookConfig.maxZoom||2));
@@ -123,72 +146,29 @@ pageFlip = new St.PageFlip(bookEl, {
       const nowMuted = !(btnMute.dataset.muted === 'true');
       btnMute.dataset.muted = String(nowMuted);
       audio.muted = nowMuted;
-      localStorage.setItem(MUTE_KEY, String(nowMuted));
+      localStorage.setItem('flipbook-muted', String(nowMuted));
     });
 
     // slider -> jump
-    slider.addEventListener('input', (e) => {
-      const idx = Number(e.target.value) - 1;
-      updateLabel(idx);
-    });
-    slider.addEventListener('change', (e) => {
-      const idx = Number(e.target.value) - 1;
-      pageFlip.turnToPage(idx);
-    });
+    slider.addEventListener('input', (e) => updateLabel(Number(e.target.value) - 1));
+    slider.addEventListener('change', (e) => pageFlip.turnToPage(Number(e.target.value) - 1));
 
     // keys
     window.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight') pageFlip.flipNext();
       if (e.key === 'ArrowLeft')  pageFlip.flipPrev();
-      if (e.key === '+') setZoom(clamp(zoom + (flipbookConfig.zoomStep||0.2),
-                                       flipbookConfig.minZoom||1, flipbookConfig.maxZoom||2));
-      if (e.key === '-') setZoom(clamp(zoom - (flipbookConfig.zoomStep||0.2),
-                                       flipbookConfig.minZoom||1, flipbookConfig.maxZoom||2));
+      if (e.key === '+') btnZoomIn.click();
+      if (e.key === '-') btnZoomOut.click();
       if (e.key.toLowerCase() === 'f') btnFs.click();
       if (e.key.toLowerCase() === 'm') btnMute.click();
     });
 
-    // responsive sizing
+    // responsive
     window.addEventListener('resize', () => {
-      sizeToContainer(ratio);
-      pageFlip.update({
-        width: Math.floor(zoomEl.clientWidth  * 0.92),
-        height: Math.floor(zoomEl.clientWidth * 0.92 * ratio)
-      });
+      sizeToContainer();
+      const s = fitToBox(zoomEl.clientWidth, zoomEl.clientHeight, ratio);
+      pageFlip.update({ width: s.w, height: s.h });
+      makeTransparent();
     });
   });
-
-  function setZoom(val){
-    zoom = val;
-    zoomEl.style.transform = `scale(${zoom})`;
-  }
-  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
-
-  function sizeToContainer(ratio){
-    // Keep book inside zoom box respecting aspect ratio
-    const W = Math.min(window.innerWidth * 0.96, 1200);
-    const H = Math.min(window.innerHeight * 0.86, 800);
-    // just set container; PageFlip gets exact px in constructor/update
-    zoomEl.style.width  = W + 'px';
-    zoomEl.style.height = H + 'px';
-  }
-
-  function updateLabel(index){
-    // Label like "10–11" for spreads; single numbers for covers
-    if (pageCount <= 0) { label.textContent = '—'; return; }
-    const last = pageCount - 1;
-
-    if (flipbookConfig.showCover) {
-      if (index === 0) { label.textContent = '1'; return; }
-      if (index === last) { label.textContent = String(pageCount); return; }
-      // middle spreads (approximation matching common viewers)
-      label.textContent = (index % 2 === 1)
-        ? `${index+1}–${index+2}`
-        : `${index}–${index+1}`;
-    } else {
-      // no cover mode: show even-odd pair around index
-      if (index % 2 === 0) label.textContent = `${index+1}–${index+2}`;
-      else                  label.textContent = `${index}–${index+1}`;
-    }
-  }
 })();
