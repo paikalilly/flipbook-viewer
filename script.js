@@ -42,9 +42,11 @@ pageFlip = new St.PageFlip(bookEl, {
   height: h,
   size: "stretch",
   maxShadowOpacity: 0,
-  showCover: !!flipbookConfig.showCover,
+  showCover: true,
+  drawShadow: false,
   usePortrait: false,
   mobileScrollSupport: true
+  startPage: 0
 });
 
   window.addEventListener('resize', () => {
