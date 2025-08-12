@@ -43,10 +43,8 @@ pageFlip = new St.PageFlip(bookEl, {
   size: "stretch",
   maxShadowOpacity: 0,
   showCover: true,
-  drawShadow: false,
   usePortrait: false,
   mobileScrollSupport: true
-  startPage: 0
 });
 
   window.addEventListener('resize', () => {
