@@ -1,5 +1,5 @@
 const flipbookConfig = {
-  title: "professional portfolio",
+  title: "parishka kiara professional portfolio",
 pages: [
   "https://assets.parishka.com/web%20portfolio_600dpi_png/page_0001.png",
   "https://assets.parishka.com/web%20portfolio_600dpi_png/page_0002.png",
